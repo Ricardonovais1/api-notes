@@ -5,8 +5,6 @@ class Api::V1::NotesController < Api::V1::ApiController
     @notes = Note.all
 
     render json: @notes
-    ActionCable.server.broadcast('note_channel', { type: 'index', notes: @notes })
-
   end
 
   def show
@@ -23,7 +21,6 @@ class Api::V1::NotesController < Api::V1::ApiController
     @note = Note.new(note_params)
 
     if @note.save
-      ActionCable.server.broadcast('note_channel', { type: 'create', note: @note })
       render status: 201, json: @note
     else
       render status: 412, json: { errors: @note.errors.full_messages }
@@ -33,7 +30,6 @@ class Api::V1::NotesController < Api::V1::ApiController
   def update
     if @note.update(note_params)
       render json: @note
-      ActionCable.server.broadcast('note_channel', { type: 'update', note: @note })
     else
       render status: 412, json: { errors: @note.errors.full_messages }
     end
