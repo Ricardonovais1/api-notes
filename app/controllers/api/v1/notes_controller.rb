@@ -1,14 +1,14 @@
 class Api::V1::NotesController < Api::V1::ApiController
   before_action :set_note, only: %i[ update destroy ]
 
-  # GET /notes
   def index
     @notes = Note.all
 
     render json: @notes
+    ActionCable.server.broadcast('note_channel', { type: 'index', notes: notes })
+
   end
 
-  # GET /notes/1
   def show
     note = Note.find_by(id: params[:id])
 
@@ -19,27 +19,26 @@ class Api::V1::NotesController < Api::V1::ApiController
     end
   end
 
-  # POST /notes
   def create
     @note = Note.new(note_params)
 
     if @note.save
+      ActionCable.server.broadcast('note_channel', note: @note)
       render status: 201, json: @note
     else
       render status: 412, json: { errors: @note.errors.full_messages }
     end
   end
 
-  # PATCH/PUT /notes/1
   def update
     if @note.update(note_params)
       render json: @note
+      ActionCable.server.broadcast('note_channel', { type: 'update', note: note })
     else
       render status: 412, json: { errors: @note.errors.full_messages }
     end
   end
 
-  # DELETE /notes/1
   def destroy
     if @note.destroy
       render status: 200, json: { message: 'Nota excluída com sucesso' }
@@ -47,12 +46,11 @@ class Api::V1::NotesController < Api::V1::ApiController
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
+
     def set_note
       @note = Note.find(params[:id])
     end
 
-    # Only allow a list of trusted parameters through.
     def note_params
       params.require(:note).permit(:body)
     end
